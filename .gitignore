@@ -1,0 +1,30 @@
+# ============================================================
+#  Karavali Lodge — .gitignore
+# Place this file as  .gitignore  in the project root
+# (karavali_lodge/ folder)
+# ============================================================
+ 
+# Environment & credentials — NEVER commit these
+.env
+.env.local
+.env.production
+ 
+# Uploaded guest ID photos — private data, never commit
+uploads/
+uploads/id_proofs/
+ 
+# PHP error logs — server-specific, no need in repo
+logs/
+*.log
+ 
+# OS junk
+.DS_Store
+Thumbs.db
+ 
+# Editor folders
+.vscode/
+.idea/
+ 
+# XAMPP / local server files
+.htpasswd
+ 

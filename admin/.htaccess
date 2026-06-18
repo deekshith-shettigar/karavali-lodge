@@ -1,0 +1,5 @@
+
+# Auto-added by setup_admin.php — blocks this file after first use
+<Files "setup_admin.php">
+    Require all denied
+</Files>

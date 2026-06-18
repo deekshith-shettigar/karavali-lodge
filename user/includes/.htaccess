@@ -1,0 +1,13 @@
+# ============================================================
+# Karavali Lodge — .htaccess for includes/ folder
+# Place this file as  .htaccess  inside:
+#   karavali_lodge/user/includes/.htaccess
+#
+# Blocks all direct browser access to PHP config files.
+# Even if someone guesses the URL they get a 403 Forbidden.
+# ============================================================
+
+# Deny all direct access to files in this folder
+<FilesMatch "\.php$">
+    Require all denied
+</FilesMatch>
