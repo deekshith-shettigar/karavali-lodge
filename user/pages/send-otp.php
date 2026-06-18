@@ -3,11 +3,11 @@
 // Karavali Lodge — OTP Sender
 // karavali_lodge/user/pages/send-otp.php
 //
-// Sends OTP via Gmail only.
+// Sends OTP via Brevo SMTP.
 // Guests without an email on file are directed
 // to call hotel reception for a manual reset.
 //
-// Requires: notifications.php (sendGmail + normalisePhone)
+// Requires: notifications.php (sendEmail + normalisePhone)
 // =============================================
 
 header('Content-Type: application/json');
@@ -192,7 +192,7 @@ switch ($action) {
            ->execute([$last10, password_hash($otpCode, PASSWORD_DEFAULT), $expiresAt]);
 
         // Send OTP email
-        $emailResult = sendGmail(
+        $emailResult = sendEmail(
             $guest['email'],
             'Your OTP for Password Reset — Karavali Lodge',
             buildOtpEmail($guest['name'], $otpCode)

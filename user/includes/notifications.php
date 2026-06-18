@@ -1,20 +1,7 @@
 <?php
-// =============================================
-// Karavali Lodge — Notification Service
-// karavali_lodge/user/includes/notifications.php
-//
-// Sends booking notifications via Gmail only.
-//
-// ── CREDENTIALS SETUP ────────────────────────────────────────────
-// Credentials are loaded from the .env file located at the project
-// root (karavali_lodge/.env) so they are never accessible via
-// browser even if .htaccess fails.
-//
-// .env file contents (copy and fill in your values):
-//   GMAIL_FROM_EMAIL=your@gmail.com
-//   GMAIL_APP_PASSWORD=xxxx xxxx xxxx xxxx
-//   ADMIN_NOTIFY_EMAIL=admin@gmail.com
-// ─────────────────────────────────────────────────────────────────
+// Load Composer autoloader (PHPMailer)
+$autoload = dirname(__DIR__, 2) . '/vendor/autoload.php';
+if (file_exists($autoload)) require_once $autoload;
 
 // ── Load .env file ────────────────────────────────────────────────
 function loadEnvFile(): void {
@@ -37,8 +24,7 @@ function loadEnvFile(): void {
             if (!str_contains($line, '=')) continue;
 
             [$key, $value] = array_map('trim', explode('=', $line, 2));
-            // Strip surrounding quotes if present — use double-quoted string
-            // to avoid smart-quote corruption that breaks single-quoted syntax
+            // Strip surrounding quotes if present
             $value = trim($value, "\"'");
             if ($key !== '' && getenv($key) === false) {
                 putenv("{$key}={$value}");
@@ -51,25 +37,20 @@ function loadEnvFile(): void {
 loadEnvFile();
 
 // ── Credential definitions — loaded from .env only ──────────────
-// All values MUST exist in your .env file.
-// If any are missing the app will log a warning and disable email
-// rather than silently using hardcoded secrets.
 $_missingEnv = [];
-foreach (['GMAIL_FROM_EMAIL', 'GMAIL_APP_PASSWORD', 'ADMIN_NOTIFY_EMAIL'] as $_key) {
+foreach (['BREVO_SMTP_USER', 'BREVO_SMTP_PASS', 'BREVO_FROM_EMAIL', 'ADMIN_NOTIFY_EMAIL'] as $_key) {
     if (!getenv($_key)) $_missingEnv[] = $_key;
 }
 
 if (!empty($_missingEnv)) {
     error_log('[notifications.php] Missing .env keys: ' . implode(', ', $_missingEnv) . '. Email notifications disabled.');
     define('NOTIFY_EMAIL_ENABLED', false);
-    define('GMAIL_FROM_EMAIL',   '');
-    define('GMAIL_FROM_NAME',    'Karavali Lodge');
-    define('GMAIL_APP_PASSWORD', '');
+    define('BREVO_FROM_EMAIL',   '');
+    define('BREVO_FROM_NAME',    'Karavali Lodge');
     define('ADMIN_NOTIFY_EMAIL', '');
 } else {
-    define('GMAIL_FROM_EMAIL',   getenv('GMAIL_FROM_EMAIL'));
-    define('GMAIL_FROM_NAME',    'Karavali Lodge');
-    define('GMAIL_APP_PASSWORD', getenv('GMAIL_APP_PASSWORD'));
+    define('BREVO_FROM_EMAIL',   getenv('BREVO_FROM_EMAIL'));
+    define('BREVO_FROM_NAME',    getenv('BREVO_FROM_NAME') ?: 'Karavali Lodge');
     define('ADMIN_NOTIFY_EMAIL', getenv('ADMIN_NOTIFY_EMAIL'));
     define('NOTIFY_EMAIL_ENABLED', true);
 }
@@ -96,10 +77,10 @@ function sendBookingNotification(string $event, array $data): array {
     [$guestEmail, $adminEmail] = buildEmailMessages($event, $d);
 
     if (NOTIFY_EMAIL_ENABLED && !empty($d['email'])) {
-        $results['guest_email'] = sendGmail($d['email'], $guestEmail['subject'], $guestEmail['html']);
+        $results['guest_email'] = sendEmail($d['email'], $guestEmail['subject'], $guestEmail['html']);
     }
     if (NOTIFY_EMAIL_ENABLED) {
-        $results['admin_email'] = sendGmail(ADMIN_NOTIFY_EMAIL, $adminEmail['subject'], $adminEmail['html']);
+        $results['admin_email'] = sendEmail(ADMIN_NOTIFY_EMAIL, $adminEmail['subject'], $adminEmail['html']);
     }
 
     logNotification($event, $d, $results);
@@ -236,86 +217,64 @@ function buildEmailMessages(string $event, array $d): array {
     }
 }
 
-// ── Send via Gmail SMTP ───────────────────────────────────────────
-function sendGmail(string $to, string $subject, string $htmlBody): array {
+// ── Send via Brevo SMTP ───────────────────────────────────────────
+function sendEmail(string $to, string $subject, string $htmlBody): array {
     if (empty($to)) return ['sent' => false, 'error' => 'No recipient email address.'];
     try {
-        if (class_exists('PHPMailer\\PHPMailer\\PHPMailer')) {
-            return sendGmailViaPHPMailer($to, $subject, $htmlBody);
-        }
-        return sendGmailViaSocket($to, $subject, $htmlBody);
+        return sendViaBrevoApi($to, $subject, $htmlBody);
     } catch (Exception $e) {
-        logError('Gmail', $e->getMessage());
+        logError('Brevo', $e->getMessage());
         return ['sent' => false, 'error' => $e->getMessage()];
     }
 }
 
-function sendGmailViaPHPMailer(string $to, string $subject, string $htmlBody): array {
-    $mail = new \PHPMailer\PHPMailer\PHPMailer(true);
-    try {
-        $mail->isSMTP();
-        $mail->Host       = 'smtp.gmail.com';
-        $mail->SMTPAuth   = true;
-        $mail->Username   = GMAIL_FROM_EMAIL;
-        $mail->Password   = GMAIL_APP_PASSWORD;
-        $mail->SMTPSecure = \PHPMailer\PHPMailer\PHPMailer::ENCRYPTION_STARTTLS;
-        $mail->Port       = 587;
-        $mail->CharSet    = 'UTF-8';
-        $mail->setFrom(GMAIL_FROM_EMAIL, GMAIL_FROM_NAME);
-        $mail->addAddress($to);
-        $mail->isHTML(true);
-        $mail->Subject = $subject;
-        $mail->Body    = $htmlBody;
-        $mail->AltBody = strip_tags(str_replace(['<br>', '<br/>', '</p>'], "\n", $htmlBody));
-        $mail->send();
-        return ['sent' => true];
-    } catch (\PHPMailer\PHPMailer\Exception $e) {
-        return ['sent' => false, 'error' => $mail->ErrorInfo];
+function sendViaBrevoApi(string $to, string $subject, string $htmlBody): array {
+    $apiKey   = getenv('BREVO_API_KEY');
+    $fromEmail = getenv('BREVO_FROM_EMAIL') ?: BREVO_FROM_EMAIL;
+    $fromName  = getenv('BREVO_FROM_NAME')  ?: BREVO_FROM_NAME;
+
+    if (!$apiKey) {
+        return ['sent' => false, 'error' => 'BREVO_API_KEY not set in .env'];
     }
-}
 
-function sendGmailViaSocket(string $to, string $subject, string $htmlBody): array {
-    $host = 'smtp.gmail.com'; $port = 587; $timeout = 15;
-    $username = GMAIL_FROM_EMAIL;
-    $password = str_replace(' ', '', GMAIL_APP_PASSWORD);
-    $from = GMAIL_FROM_EMAIL; $fromName = GMAIL_FROM_NAME;
+    $payload = json_encode([
+        'sender'     => ['name' => $fromName, 'email' => $fromEmail],
+        'to'         => [['email' => $to]],
+        'subject'    => $subject,
+        'htmlContent'=> $htmlBody,
+    ]);
 
-    $sock = @fsockopen($host, $port, $errno, $errstr, $timeout);
-    if (!$sock) return ['sent' => false, 'error' => "Cannot connect to {$host}:{$port} — {$errstr}"];
+    $ch = curl_init('https://api.brevo.com/v3/smtp/email');
+    curl_setopt_array($ch, [
+        CURLOPT_RETURNTRANSFER => true,
+        CURLOPT_POST           => true,
+        CURLOPT_POSTFIELDS     => $payload,
+        CURLOPT_HTTPHEADER     => [
+            'Content-Type: application/json',
+            'api-key: ' . $apiKey,
+        ],
+        CURLOPT_TIMEOUT        => 15,
+    ]);
 
-    $read = function() use ($sock) {
-        $data = '';
-        while ($line = fgets($sock, 515)) { $data .= $line; if (substr($line, 3, 1) === ' ') break; }
-        return $data;
-    };
-    $send = function(string $cmd) use ($sock, $read): string { fwrite($sock, $cmd . "\r\n"); return $read(); };
+    $response = curl_exec($ch);
+    $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+    $curlError = curl_error($ch);
+    curl_close($ch);
 
-    $read(); $send("EHLO localhost"); $send("STARTTLS");
-    stream_socket_enable_crypto($sock, true, STREAM_CRYPTO_METHOD_TLS_CLIENT);
-    $send("EHLO localhost"); $send("AUTH LOGIN");
-    $send(base64_encode($username));
-    $r = $send(base64_encode($password));
-    if (strpos($r, '235') === false) { fclose($sock); return ['sent' => false, 'error' => 'Gmail AUTH failed. Response: ' . trim($r)]; }
+    if ($curlError) {
+        return ['sent' => false, 'error' => 'cURL error: ' . $curlError];
+    }
 
-    $send("MAIL FROM:<{$from}>"); $send("RCPT TO:<{$to}>"); $send("DATA");
-    $boundary  = md5(uniqid());
-    // Message-ID is required by virtually every spam filter as a basic
-    // sign of a legitimate email — without it, mail to a fresh recipient
-    // (anyone other than your own Gmail inbox, which Gmail trusts more
-    // leniently) is much more likely to be routed to spam.
-    $messageId = '<' . md5(uniqid((string) microtime(true), true)) . '@gmail.com>';
-    $headers  = "From: {$fromName} <{$from}>\r\nTo: {$to}\r\n"
-        . "Subject: =?UTF-8?B?" . base64_encode($subject) . "?=\r\n"
-        . "MIME-Version: 1.0\r\nContent-Type: multipart/alternative; boundary=\"{$boundary}\"\r\n"
-        . "Date: " . date('r') . "\r\nMessage-ID: {$messageId}\r\nX-Mailer: KaravaliLodgeMailer/1.0\r\n\r\n";
-    $plain = strip_tags(str_replace(['<br>', '<br/>', '</p>'], "\n", $htmlBody));
-    $body  = "--{$boundary}\r\nContent-Type: text/plain; charset=UTF-8\r\nContent-Transfer-Encoding: base64\r\n\r\n"
-        . chunk_split(base64_encode($plain)) . "\r\n"
-        . "--{$boundary}\r\nContent-Type: text/html; charset=UTF-8\r\nContent-Transfer-Encoding: base64\r\n\r\n"
-        . chunk_split(base64_encode($htmlBody)) . "\r\n--{$boundary}--\r\n";
+    $data = json_decode($response, true);
 
-    $r = $send($headers . $body . "\r\n."); $send("QUIT"); fclose($sock);
-    return strpos($r, '250') !== false ? ['sent' => true] : ['sent' => false, 'error' => 'SMTP error: ' . trim($r)];
+    if ($httpCode === 201) {
+        return ['sent' => true, 'messageId' => $data['messageId'] ?? ''];
+    }
+
+    return [
+        'sent'  => false,
+        'error' => $data['message'] ?? "HTTP $httpCode: $response",
+    ];
 }
 
 // ── Helpers ───────────────────────────────────────────────────────

@@ -31,8 +31,14 @@ karavali_lodge/.env
 With these values (edit as needed):
 
 ```env
-GMAIL_FROM_EMAIL=your@gmail.com
-GMAIL_APP_PASSWORD=xxxx xxxx xxxx xxxx
+BREVO_SMTP_HOST=smtp-relay.brevo.com
+BREVO_SMTP_PORT=587
+BREVO_SMTP_USER=your-login@smtp-brevo.com
+BREVO_SMTP_PASS=your-smtp-key
+BREVO_FROM_EMAIL=your@email.com
+BREVO_FROM_NAME=Karavali Lodge
+BREVO_API_KEY=your-brevo-api-key
+
 ADMIN_NOTIFY_EMAIL=admin@gmail.com
 
 DB_HOST=localhost
@@ -49,6 +55,11 @@ RAZORPAY_ADVANCE_PERCENT=1.00
 
 APP_ENV=development
 ```
+
+> **Note:** Email is sent via the **Brevo API** (HTTPS), not SMTP.
+> This avoids port 587/465 being blocked on localhost or shared hosting.
+> `BREVO_API_KEY` is required. Get it from:
+> `app.brevo.com/settings/keys/api`
 
 ## Database Setup
 
@@ -72,8 +83,22 @@ APP_ENV=development
 - Vanilla JS (admin SPA)
 - Bootstrap 5 (UI)
 - Razorpay (payments)
-- Gmail SMTP via Nodemailer-style PHP (OTP/notifications)
+- Brevo API (transactional email — OTP & booking notifications)
 - jsPDF (PDF billing)
+
+## Email Setup (Brevo)
+
+All transactional emails (OTP, booking confirmations, etc.) are sent via the **Brevo API** using cURL over HTTPS — not SMTP. This means:
+
+- No firewall issues with ports 587 or 465
+- Works on localhost, XAMPP, and shared hosting out of the box
+- Requires only `BREVO_API_KEY` in your `.env`
+
+**Steps to get your API key:**
+1. Sign up / log in at [app.brevo.com](https://app.brevo.com)
+2. Go to **Settings → SMTP & API → API Keys**
+3. Generate a new key and paste it into `.env` as `BREVO_API_KEY`
+4. Go to **Settings → Senders, Domains, IPs** and verify your sender email
 
 ## Security Features
 
@@ -89,6 +114,7 @@ APP_ENV=development
 ## Deployment
 
 1. Upload files to your server
-2. Set `.env` values for production
+2. Set `.env` values for production (especially `BREVO_API_KEY` and `APP_ENV=production`)
 3. Import the SQL schema
 4. Point your domain's document root to `karavali_lodge/`
+5. Delete `test_email.php` from the project root if it exists

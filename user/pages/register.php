@@ -2,12 +2,10 @@
 $pageTitle = "Register - Karavali Lodge";
 require_once __DIR__ . '/../includes/config.php';
 
-// Prevent browser from caching this page
 header('Cache-Control: no-store, no-cache, must-revalidate');
 header('Pragma: no-cache');
 header('Expires: 0');
 
-// Already logged in → go to bookings
 if (isLoggedIn()) redirect(SITE_URL . '/pages/my-bookings.php');
 
 $errors  = [];
@@ -22,7 +20,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $password    = $_POST['password']                  ?? '';
     $confirmPass = $_POST['confirm_password']          ?? '';
 
-    // Validation
     if (!$name)                     $errors[] = 'Full name is required.';
     if (!$mobile)                   $errors[] = 'Mobile number is required.';
     if (!$email)                    $errors[] = 'Email address is required.';
@@ -37,8 +34,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $db           = getDB();
         $passwordHash = password_hash($password, PASSWORD_DEFAULT);
 
-        // ── Guest registration only ───────────────────────────────
-        // Admin accounts are managed separately via admin/setup_admin.php
         $check = $db->prepare("SELECT id FROM guests WHERE mobile = ?");
         $check->execute([$mobile]);
         if ($check->fetch()) {
@@ -49,8 +44,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                           VALUES (?, ?, ?, ?, ?, ?, ?)")
                ->execute([$id, $name, $mobile, $email, $nationality, $address, $passwordHash]);
 
-            // Regenerate session ID before setting auth data to prevent
-            // session fixation — same pattern used in login.php
             session_regenerate_id(true);
             $_SESSION['guest_id']   = $id;
             $_SESSION['guest_name'] = $name;
@@ -66,15 +59,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title><?= $pageTitle ?></title>
 
-    <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,600;0,700;1,400&family=Cormorant+Garamond:ital,wght@1,300;1,400&family=Jost:wght@300;400;500;600&display=swap" rel="stylesheet">
-
-    <!-- Bootstrap + Icons -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
-
-    <!-- Custom CSS -->
     <link href="<?= SITE_URL ?>/css/style.css" rel="stylesheet">
 
     <style>
@@ -98,7 +86,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             pointer-events: none;
         }
 
-                .register-wrapper {
+        .register-wrapper {
             width: 100%;
             position: relative;
             z-index: 1;
@@ -114,22 +102,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             width: 100%;
         }
 
-        /* Card top banner — matches login white style */
         .register-banner {
             background: #FFFFFF;
             padding: 36px 36px 24px;
             text-align: center;
-        }
-
-        .register-emblem {
-            background: none;
-            box-shadow: none;
-            width: 80px;
-            height: 80px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            margin: 0 auto 16px;
         }
 
         .register-banner h2 {
@@ -148,12 +124,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             margin: 0;
         }
 
-        /* Form body */
         .register-body {
             padding: 36px;
         }
 
-        /* Field styling */
         .field-group {
             margin-bottom: 18px;
         }
@@ -214,7 +188,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             font-size: 1rem;
         }
 
-        /* Submit button */
+        /* Password fields — consistent dot size, no jumping */
+        .pass-input {
+            font-size: 1rem !important;
+            letter-spacing: normal !important;
+            height: 50px;
+            padding-left: 42px !important;
+            padding-right: 44px !important;
+        }
+
         .btn-register {
             width: 100%;
             background: linear-gradient(135deg, #C4943A, #D4AD5E);
@@ -242,14 +224,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             background: linear-gradient(135deg, #D4AD5E, #C4943A);
         }
 
-        /* Big dots only when typing password, normal placeholder */
-        .pass-field { font-size: 1rem !important; }
-        .pass-field:not(:placeholder-shown) {
-            font-size: 1.5rem !important;
-            letter-spacing: 4px !important;
-        }
-
-        /* Divider */
         .auth-divider {
             display: flex;
             align-items: center;
@@ -272,7 +246,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             white-space: nowrap;
         }
 
-        /* Login link */
         .login-link-box {
             text-align: center;
             padding: 16px;
@@ -293,11 +266,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             text-decoration: none;
         }
 
-        .login-link-box a:hover {
-            color: #3B1A0A;
-        }
+        .login-link-box a:hover { color: #3B1A0A; }
 
-        /* Error alert */
         .alert-err {
             background: #FEF2F2;
             border: 1px solid #FECACA;
@@ -314,28 +284,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         .alert-err i { color: #EF4444; font-size: 1rem; margin-top: 1px; flex-shrink: 0; }
 
-        /* Back to home */
-        .back-home {
-            text-align: center;
-            margin-top: 20px;
-            position: relative;
-            z-index: 1;
-        }
-
-        .back-home a {
-            color: rgba(255,255,255,0.5);
-            font-size: 0.85rem;
-            font-family: 'Jost', sans-serif;
-            text-decoration: none;
-            transition: color 0.3s;
-            display: inline-flex;
-            align-items: center;
-            gap: 6px;
-        }
-
-        .back-home a:hover { color: #D4AD5E; }
-
-        /* Optional field hint */
         .optional-hint {
             font-size: 0.72rem;
             color: #C4B89A;
@@ -343,7 +291,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             margin-top: 4px;
         }
 
-        /* Row gap fix */
         .field-row {
             display: grid;
             grid-template-columns: 1fr 1fr;
@@ -364,9 +311,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         .req-item i { font-size: 0.8rem; }
 
         @media (max-width: 480px) {
-            .register-body    { padding: 24px 20px; }
-            .register-banner  { padding: 24px 20px; }
-            .field-row        { grid-template-columns: 1fr; }
+            .register-body   { padding: 24px 20px; }
+            .register-banner { padding: 24px 20px; }
+            .field-row       { grid-template-columns: 1fr; }
         }
     </style>
 </head>
@@ -379,7 +326,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
                 <!-- Banner -->
                 <div class="register-banner">
-                    <div class="register-emblem" style="background:none;box-shadow:none;width:80px;height:80px;margin:0 auto 12px;">
+                    <div style="width:80px;height:80px;margin:0 auto 12px;">
                         <img src="<?= SITE_URL ?>/images/Lodge_Logoo.png"
                              alt="Karavali Lodge"
                              style="width:80px;height:80px;object-fit:contain;">
@@ -409,15 +356,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                             <label class="field-label">Full Name <span class="req">*</span></label>
                             <div class="field-icon-wrap">
                                 <i class="bi bi-person f-icon"></i>
-                                <input
-                                    type="text"
-                                    name="name"
-                                    class="field-input"
+                                <input type="text" name="name" class="field-input"
                                     placeholder="e.g. Rajesh Kumar"
                                     value="<?= sanitize($_POST['name'] ?? '') ?>"
-                                    required
-                                    maxlength="100"
-                                >
+                                    required maxlength="100">
                             </div>
                         </div>
 
@@ -426,87 +368,60 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                             <label class="field-label">Mobile Number <span class="req">*</span></label>
                             <div class="field-icon-wrap">
                                 <i class="bi bi-telephone f-icon"></i>
-                                <input
-                                    type="tel"
-                                    name="mobile"
-                                    class="field-input"
+                                <input type="tel" name="mobile" class="field-input"
                                     placeholder="10-digit mobile number"
                                     value="<?= sanitize($_POST['mobile'] ?? '') ?>"
-                                    required
-                                    maxlength="15"
-                                    id="mobileField"
-                                >
+                                    required maxlength="15" id="mobileField">
                             </div>
                             <div class="optional-hint" id="mobileHint"></div>
                         </div>
 
                         <!-- Email -->
                         <div class="field-group">
-                            <label class="field-label">Email Address <span style="color:#C4943A">*</span></label>
+                            <label class="field-label">Email Address <span class="req">*</span></label>
                             <div class="field-icon-wrap">
                                 <i class="bi bi-envelope f-icon"></i>
-                                <input
-                                    type="email"
-                                    name="email"
-                                    class="field-input"
+                                <input type="email" name="email" class="field-input"
                                     placeholder="your@email.com"
                                     value="<?= sanitize($_POST['email'] ?? '') ?>"
-                                    maxlength="100"
-                                    required
-                                >
+                                    maxlength="100" required>
                             </div>
                         </div>
 
-                        <!-- Nationality + Address row -->
+                        <!-- Nationality + City -->
                         <div class="field-row">
                             <div class="field-group" style="margin-bottom:0">
-                                <label class="field-label">Nationality <span style="color:#C4943A">*</span></label>
+                                <label class="field-label">Nationality <span class="req">*</span></label>
                                 <div class="field-icon-wrap">
                                     <i class="bi bi-globe f-icon"></i>
-                                    <input
-                                        type="text"
-                                        name="nationality"
-                                        class="field-input"
+                                    <input type="text" name="nationality" class="field-input"
                                         placeholder="Indian"
                                         value="<?= sanitize($_POST['nationality'] ?? 'Indian') ?>"
-                                        maxlength="50"
-                                        required
-                                    >
+                                        maxlength="50" required>
                                 </div>
                             </div>
                             <div class="field-group" style="margin-bottom:0">
-                                <label class="field-label">City <span style="color:#C4943A">*</span></label>
+                                <label class="field-label">City <span class="req">*</span></label>
                                 <div class="field-icon-wrap">
                                     <i class="bi bi-geo-alt f-icon"></i>
-                                    <input
-                                        type="text"
-                                        name="address"
-                                        class="field-input"
+                                    <input type="text" name="address" class="field-input"
                                         placeholder="Your city"
                                         value="<?= sanitize($_POST['address'] ?? '') ?>"
-                                        maxlength="100"
-                                        required
-                                    >
+                                        maxlength="100" required>
                                 </div>
                             </div>
                         </div>
 
                         <!-- Password -->
                         <div class="field-group" style="margin-top:24px;">
-                            <label class="field-label">PASSWORD <span class="req">*</span></label>
+                            <label class="field-label">Password <span class="req">*</span></label>
                             <div class="field-icon-wrap" style="position:relative;">
-                                <i class="bi bi-lock f-icon" style="position:absolute;left:14px;top:50%;transform:translateY(-50%);color:#C4943A;font-size:1rem;z-index:1;"></i>
-                                <input
-                                    type="password"
-                                    name="password"
-                                    id="passwordField"
-                                    class="field-input"
+                                <i class="bi bi-lock f-icon" style="z-index:1;"></i>
+                                <input type="password" name="password" id="passwordField"
+                                    class="field-input pass-input"
                                     placeholder="Minimum 8 characters"
-                                    required
-                                    minlength="8"
-                                    style="padding-left:42px;padding-right:44px;font-size:1rem;height:50px;"
-                                    oninput="checkStrength(this.value)"
-                                >
+                                    required minlength="8"
+                                    oninput="checkStrength(this.value)">
                                 <button type="button" onclick="togglePass('passwordField','eyeIcon1')"
                                     style="position:absolute;right:12px;top:50%;transform:translateY(-50%);background:none;border:none;color:#C4943A;cursor:pointer;font-size:1.1rem;padding:0;">
                                     <i class="bi bi-eye" id="eyeIcon1"></i>
@@ -516,53 +431,37 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                             <!-- Strength bar -->
                             <div id="strengthWrap" style="display:none;margin-top:8px;">
                                 <div style="height:5px;background:#EEE;border-radius:4px;overflow:hidden;">
-                                    <div id="strengthBar"
-                                         style="height:100%;width:0;border-radius:4px;transition:width .35s,background .35s;">
-                                    </div>
+                                    <div id="strengthBar" style="height:100%;width:0;border-radius:4px;transition:width .35s,background .35s;"></div>
                                 </div>
                                 <div style="display:flex;justify-content:space-between;align-items:center;margin-top:5px;">
-                                    <span id="strengthLabel"
-                                          style="font-size:0.75rem;font-family:'Jost',sans-serif;font-weight:600;">
-                                    </span>
-                                    <span id="strengthTip"
-                                          style="font-size:0.72rem;color:#8B7355;font-family:'Jost',sans-serif;">
-                                    </span>
+                                    <span id="strengthLabel" style="font-size:0.75rem;font-family:'Jost',sans-serif;font-weight:600;"></span>
+                                    <span id="strengthTip"   style="font-size:0.72rem;color:#8B7355;font-family:'Jost',sans-serif;"></span>
                                 </div>
-                                <!-- Requirements checklist -->
                                 <div id="reqList" style="margin-top:8px;display:grid;grid-template-columns:1fr 1fr;gap:3px 12px;">
                                     <div class="req-item" id="req-len">
-                                        <i class="bi bi-x-circle-fill" style="color:#ddd;"></i>
-                                        <span>8+ characters</span>
+                                        <i class="bi bi-x-circle-fill" style="color:#ddd;"></i><span>8+ characters</span>
                                     </div>
                                     <div class="req-item" id="req-upper">
-                                        <i class="bi bi-x-circle-fill" style="color:#ddd;"></i>
-                                        <span>Uppercase letter</span>
+                                        <i class="bi bi-x-circle-fill" style="color:#ddd;"></i><span>Uppercase letter</span>
                                     </div>
                                     <div class="req-item" id="req-num">
-                                        <i class="bi bi-x-circle-fill" style="color:#ddd;"></i>
-                                        <span>Number</span>
+                                        <i class="bi bi-x-circle-fill" style="color:#ddd;"></i><span>Number</span>
                                     </div>
                                     <div class="req-item" id="req-special">
-                                        <i class="bi bi-x-circle-fill" style="color:#ddd;"></i>
-                                        <span>Special character</span>
+                                        <i class="bi bi-x-circle-fill" style="color:#ddd;"></i><span>Special character</span>
                                     </div>
                                 </div>
                             </div>
                         </div>
 
+                        <!-- Confirm Password -->
                         <div class="field-group">
-                            <label class="field-label">CONFIRM PASSWORD <span class="req">*</span></label>
+                            <label class="field-label">Confirm Password <span class="req">*</span></label>
                             <div class="field-icon-wrap" style="position:relative;">
-                                <i class="bi bi-lock-fill f-icon" style="position:absolute;left:14px;top:50%;transform:translateY(-50%);color:#C4943A;font-size:1rem;z-index:1;"></i>
-                                <input
-                                    type="password"
-                                    name="confirm_password"
-                                    id="confirmPassField"
-                                    class="field-input pass-field"
-                                    placeholder="Re-enter your password"
-                                    required
-                                    style="padding-left:42px;padding-right:44px;font-size:1rem;height:50px;"
-                                >
+                                <i class="bi bi-lock-fill f-icon" style="z-index:1;"></i>
+                                <input type="password" name="confirm_password" id="confirmPassField"
+                                    class="field-input pass-input"
+                                    placeholder="Re-enter your password" required>
                                 <button type="button" onclick="togglePass('confirmPassField','eyeIcon2')"
                                     style="position:absolute;right:12px;top:50%;transform:translateY(-50%);background:none;border:none;color:#C4943A;cursor:pointer;font-size:1.1rem;padding:0;">
                                     <i class="bi bi-eye" id="eyeIcon2"></i>
@@ -573,12 +472,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
                         <!-- Terms -->
                         <div style="display:flex;align-items:flex-start;gap:10px;margin:20px 0 4px">
-                            <input
-                                type="checkbox"
-                                id="agreeTerms"
-                                required
-                                style="width:17px;height:17px;margin-top:2px;accent-color:#C4943A;flex-shrink:0;cursor:pointer"
-                            >
+                            <input type="checkbox" id="agreeTerms" required
+                                style="width:17px;height:17px;margin-top:2px;accent-color:#C4943A;flex-shrink:0;cursor:pointer">
                             <label for="agreeTerms" style="font-size:0.83rem;color:#8B7355;font-family:'Jost',sans-serif;cursor:pointer;line-height:1.5">
                                 I agree to the
                                 <a href="#" style="color:#C4943A;font-weight:600">Terms & Conditions</a>
@@ -613,22 +508,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     </p>
                 </div>
 
-            </div><!-- /.register-card -->
+            </div>
         </div>
     </div>
 </div>
 
 <script>
-// Live mobile check — show hint if number already registered
 const mobileField = document.getElementById('mobileField');
 const mobileHint  = document.getElementById('mobileHint');
-
 let debounceTimer;
+
 mobileField?.addEventListener('input', function () {
     clearTimeout(debounceTimer);
     const val = this.value.trim();
     if (val.length < 10) { mobileHint.textContent = ''; return; }
-
     debounceTimer = setTimeout(async () => {
         try {
             const res  = await fetch('<?= SITE_URL ?>/pages/check-guest.php?mobile=' + encodeURIComponent(val));
@@ -640,56 +533,32 @@ mobileField?.addEventListener('input', function () {
                 mobileHint.style.color = '#16A34A';
                 mobileHint.innerHTML  = '<i class="bi bi-check-circle me-1"></i>Mobile number available.';
             }
-        } catch (e) {
-            mobileHint.textContent = '';
-        }
+        } catch (e) { mobileHint.textContent = ''; }
     }, 500);
 });
 
-// Nice popup instead of browser alert
 function showPopup(message, icon, color) {
-    // Remove existing popup if any
     const existing = document.getElementById('validationPopup');
     if (existing) existing.remove();
-
     const popup = document.createElement('div');
     popup.id = 'validationPopup';
-    popup.style.cssText = `
-        position:fixed;inset:0;z-index:99999;
-        display:flex;align-items:center;justify-content:center;
-        background:rgba(0,0,0,0.5);backdrop-filter:blur(4px);
-        animation:fadeIn 0.2s ease;
-    `;
+    popup.style.cssText = `position:fixed;inset:0;z-index:99999;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,0.5);backdrop-filter:blur(4px);animation:fadeIn 0.2s ease;`;
     popup.innerHTML = `
-        <style>@keyframes fadeIn{from{opacity:0}to{opacity:1}}
-               @keyframes slideIn{from{transform:scale(0.85);opacity:0}to{transform:scale(1);opacity:1}}</style>
-        <div style="background:#fff;border-radius:18px;padding:36px 32px;max-width:360px;
-                    width:90%;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,0.2);
-                    animation:slideIn 0.25s ease;">
-            <div style="width:60px;height:60px;background:${color}22;border-radius:50%;
-                        display:flex;align-items:center;justify-content:center;
-                        margin:0 auto 16px;font-size:1.6rem;">
+        <style>@keyframes fadeIn{from{opacity:0}to{opacity:1}}@keyframes slideIn{from{transform:scale(0.85);opacity:0}to{transform:scale(1);opacity:1}}</style>
+        <div style="background:#fff;border-radius:18px;padding:36px 32px;max-width:360px;width:90%;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,0.2);animation:slideIn 0.25s ease;">
+            <div style="width:60px;height:60px;background:${color}22;border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 16px;font-size:1.6rem;">
                 <i class="bi ${icon}" style="color:${color};"></i>
             </div>
-            <p style="font-family:'Jost',sans-serif;font-size:1rem;color:#3B1A0A;
-                      margin-bottom:24px;line-height:1.6;">${message}</p>
+            <p style="font-family:'Jost',sans-serif;font-size:1rem;color:#3B1A0A;margin-bottom:24px;line-height:1.6;">${message}</p>
             <button onclick="document.getElementById('validationPopup').remove()"
-                    style="background:linear-gradient(135deg,#C4943A,#D4AD5E);color:#2A1007;
-                           border:none;border-radius:10px;padding:12px 32px;
-                           font-weight:700;font-size:0.95rem;cursor:pointer;
-                           box-shadow:0 6px 20px rgba(196,148,58,0.35);">
+                style="background:linear-gradient(135deg,#C4943A,#D4AD5E);color:#2A1007;border:none;border-radius:10px;padding:12px 32px;font-weight:700;font-size:0.95rem;cursor:pointer;box-shadow:0 6px 20px rgba(196,148,58,0.35);">
                 OK, Got It
             </button>
-        </div>
-    `;
-    // Close on outside click
-    popup.addEventListener('click', function(e) {
-        if (e.target === popup) popup.remove();
-    });
+        </div>`;
+    popup.addEventListener('click', e => { if (e.target === popup) popup.remove(); });
     document.body.appendChild(popup);
 }
 
-// ── Password strength checker ────────────────────────────────────
 const COMMON_PASSWORDS = new Set([
     '12345678','password','password1','qwerty123','abc12345',
     '11111111','00000000','iloveyou','welcome1','admin123',
@@ -702,7 +571,6 @@ function checkStrength(val) {
     const label = document.getElementById('strengthLabel');
     const tip   = document.getElementById('strengthTip');
     if (!wrap) return;
-
     if (!val) { wrap.style.display = 'none'; return; }
     wrap.style.display = 'block';
 
@@ -713,7 +581,6 @@ function checkStrength(val) {
         special: /[^A-Za-z0-9]/.test(val),
     };
 
-    // Update checklist items
     Object.keys(checks).forEach(k => {
         const el = document.getElementById('req-' + k);
         if (!el) return;
@@ -734,11 +601,11 @@ function checkStrength(val) {
     if (isCommon) score = 0;
 
     const levels = [
-        { pct:'15%',  bg:'#ef4444', lbl:'Very Weak',  tip:'Too easy to guess'         },
-        { pct:'30%',  bg:'#f97316', lbl:'Weak',       tip:'Add uppercase or numbers'  },
-        { pct:'55%',  bg:'#eab308', lbl:'Fair',       tip:'Getting better!'           },
-        { pct:'75%',  bg:'#22c55e', lbl:'Strong',     tip:'Good password'             },
-        { pct:'100%', bg:'#16a34a', lbl:'Very Strong',tip:'Excellent password! ✓'     },
+        { pct:'15%',  bg:'#ef4444', lbl:'Very Weak',   tip:'Too easy to guess'        },
+        { pct:'30%',  bg:'#f97316', lbl:'Weak',        tip:'Add uppercase or numbers' },
+        { pct:'55%',  bg:'#eab308', lbl:'Fair',        tip:'Getting better!'          },
+        { pct:'75%',  bg:'#22c55e', lbl:'Strong',      tip:'Good password'            },
+        { pct:'100%', bg:'#16a34a', lbl:'Very Strong', tip:'Excellent password! ✓'    },
     ];
 
     const lv = levels[Math.min(score, 4)];
@@ -750,7 +617,6 @@ function checkStrength(val) {
     tip.style.color      = isCommon ? '#ef4444' : '#8B7355';
 }
 
-// ── Form validation ───────────────────────────────────────────────
 document.getElementById('registerForm')?.addEventListener('submit', function (e) {
     const name     = this.querySelector('[name="name"]').value.trim();
     const mobile   = this.querySelector('[name="mobile"]').value.trim();
@@ -814,10 +680,9 @@ function togglePass(fieldId, iconId) {
     }
 }
 
-// Live confirm password match check
 document.getElementById('confirmPassField')?.addEventListener('input', function() {
-    const pass    = document.getElementById('passwordField').value;
-    const hint    = document.getElementById('passHint');
+    const pass = document.getElementById('passwordField').value;
+    const hint = document.getElementById('passHint');
     hint.style.display = 'block';
     if (this.value === pass) {
         hint.style.color = '#28a745';
