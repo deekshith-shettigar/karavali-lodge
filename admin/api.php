@@ -19,8 +19,7 @@ $allowedOrigins = [
     'http://127.0.0.1',
     'http://localhost:80',
     'http://localhost:8080',
-    // Add your live domain here when deploying, e.g.:
-    // 'https://yourdomain.com',
+    'https://karavalilodge.freedev.app',
 ];
 
 $origin = $_SERVER['HTTP_ORIGIN'] ?? '';

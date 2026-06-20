@@ -273,7 +273,7 @@ const LodgeApp = {
         // prevents the next person on a shared computer from seeing
         // rooms, guests, and bookings from this admin session.
         DB.clearAll();
-        window.location.href = 'http://localhost/karavali_lodge/user/pages/logout.php';
+        window.location.href = window.location.origin + '/user/pages/logout.php';
     },
 
     async loadAdminInfo() {

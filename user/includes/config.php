@@ -11,14 +11,27 @@
 // ── Load .env ────────────────────────────────────────────────────
 // Walks up from this file's location to find .env at the project root.
 (function () {
-    $envFile = dirname(__DIR__, 2) . '/.env';   // karavali_lodge/.env
-    if (!file_exists($envFile)) {
-        // Friendly error so the developer knows what to do
+    // Try multiple locations to support both local (XAMPP) and InfinityFree
+    $candidates = [
+        dirname(__DIR__, 2) . '/.env',                    // htdocs/.env  (InfinityFree)
+        dirname(__DIR__, 3) . '/.env',                    // one level above htdocs
+        $_SERVER['DOCUMENT_ROOT'] . '/.env',              // document root
+        $_SERVER['DOCUMENT_ROOT'] . '/../.env',           // above document root
+    ];
+    $envFile = null;
+    foreach ($candidates as $candidate) {
+        if (file_exists($candidate)) {
+            $envFile = $candidate;
+            break;
+        }
+    }
+    if ($envFile === null) {
+        $envFile = dirname(__DIR__, 2) . '/.env'; // for error message
         die('<div style="font-family:sans-serif;padding:30px;background:#fff3cd;border:1px solid #ffc107;'
           . 'border-radius:8px;max-width:640px;margin:40px auto">'
           . '<h3>⚠ Configuration missing</h3>'
-          . '<p><code>.env</code> file not found at <code>' . htmlspecialchars($envFile) . '</code></p>'
-          . '<p>Copy <code>.env.example</code> to <code>.env</code> in the project root and fill in your values.</p>'
+          . '<p><code>.env</code> file not found. Tried: ' . htmlspecialchars(implode(', ', $candidates)) . '</p>'
+          . '<p>Upload your <code>.env</code> file to the <code>htdocs/</code> folder on the server.</p>'
           . '</div>');
     }
 
@@ -44,12 +57,12 @@ function env(string $key, string $default = ''): string {
 }
 
 // ── Application constants ─────────────────────────────────────────
-define('DB_HOST', env('DB_HOST', 'localhost'));
-define('DB_USER', env('DB_USER', 'root'));
-define('DB_PASS', env('DB_PASS', ''));
-define('DB_NAME', env('DB_NAME', 'karavali_lodge'));
+define('DB_HOST', env('DB_HOST', 'sql200.infinityfree.com'));
+define('DB_USER', env('DB_USER', 'if0_42211055'));
+define('DB_PASS', env('DB_PASS', 'rH8xLO9cF95y0Kv'));
+define('DB_NAME', env('DB_NAME', 'if0_42211055_karavali'));
 
-define('BASE_URL',  env('BASE_URL', 'http://localhost/karavali_lodge'));
+define('BASE_URL',  env('BASE_URL', 'https://karavalilodge.freedev.app'));
 define('SITE_URL',  BASE_URL . '/user');
 define('ADMIN_URL', BASE_URL . '/admin');
 define('API_URL',   BASE_URL . '/admin/api.php');

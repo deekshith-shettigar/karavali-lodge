@@ -4,7 +4,7 @@
    karavali_lodge/admin/js/db.js
    ========================================== */
 
-const API_URL = 'http://localhost/karavali_lodge/admin/api.php';
+const API_URL = window.location.origin + '/admin/api.php';
 
 const DB = {
 
