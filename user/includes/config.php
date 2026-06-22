@@ -71,9 +71,9 @@ define('SITE_NAME', 'Karavali Lodge');
 // ── Razorpay Payment Gateway ──────────────────────────────────────
 // Keys are read from .env — never hardcode them here.
 // Get your keys from: https://dashboard.razorpay.com/app/keys
-define('RAZORPAY_KEY_ID',          env('RAZORPAY_KEY_ID'));
-define('RAZORPAY_KEY_SECRET',      env('RAZORPAY_KEY_SECRET'));
-define('RAZORPAY_CURRENCY',        env('RAZORPAY_CURRENCY', 'INR'));
+define('RAZORPAY_KEY_ID',          env('RAZORPAY_KEY_ID',          'rzp_test_SeQ9zbuRKmXJDE'));
+define('RAZORPAY_KEY_SECRET',      env('RAZORPAY_KEY_SECRET',      'lkdvIvCsy4BYzzlolsXAGi37'));
+define('RAZORPAY_CURRENCY',        env('RAZORPAY_CURRENCY',        'INR'));
 define('RAZORPAY_ADVANCE_PERCENT', (float) env('RAZORPAY_ADVANCE_PERCENT', '1.00'));
 
 // ── Admin auth — DB only, no hardcoded numbers ───────────────────

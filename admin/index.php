@@ -232,7 +232,7 @@ $adminId   = $_SESSION['admin_id']   ?? '';
                         onclick="DB.pullFromMySQL().then(()=>{ if(window.LodgeApp) LodgeApp.navigate(LodgeApp.currentModule); })">
                     <i class="bi bi-arrow-clockwise"></i> Sync Now
                 </button>
-                <a href="http://localhost/karavali_lodge/user/" target="_blank"
+                <a href="/user/" target="_blank"
                    class="btn btn-sm btn-outline-primary">
                     <i class="bi bi-globe me-1"></i>User Website
                 </a>
