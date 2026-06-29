@@ -57,12 +57,12 @@ function env(string $key, string $default = ''): string {
 }
 
 // ── Application constants ─────────────────────────────────────────
-define('DB_HOST', env('DB_HOST', 'sql200.infinityfree.com'));
-define('DB_USER', env('DB_USER', 'if0_42211055'));
-define('DB_PASS', env('DB_PASS', 'rH8xLO9cF95y0Kv'));
-define('DB_NAME', env('DB_NAME', 'if0_42211055_karavali'));
+define('DB_HOST', env('DB_HOST', 'localhost'));
+define('DB_USER', env('DB_USER', 'root'));
+define('DB_PASS', env('DB_PASS', ''));
+define('DB_NAME', env('DB_NAME', 'karavali_lodge'));
 
-define('BASE_URL',  env('BASE_URL', 'https://karavalilodge.freedev.app'));
+define('BASE_URL',  env('BASE_URL', 'http://localhost/karavali_lodge'));
 define('SITE_URL',  BASE_URL . '/user');
 define('ADMIN_URL', BASE_URL . '/admin');
 define('API_URL',   BASE_URL . '/admin/api.php');
@@ -71,8 +71,8 @@ define('SITE_NAME', 'Karavali Lodge');
 // ── Razorpay Payment Gateway ──────────────────────────────────────
 // Keys are read from .env — never hardcode them here.
 // Get your keys from: https://dashboard.razorpay.com/app/keys
-define('RAZORPAY_KEY_ID',          env('RAZORPAY_KEY_ID',          'rzp_test_SeQ9zbuRKmXJDE'));
-define('RAZORPAY_KEY_SECRET',      env('RAZORPAY_KEY_SECRET',      'lkdvIvCsy4BYzzlolsXAGi37'));
+define('RAZORPAY_KEY_ID',          env('RAZORPAY_KEY_ID'));
+define('RAZORPAY_KEY_SECRET',      env('RAZORPAY_KEY_SECRET'));
 define('RAZORPAY_CURRENCY',        env('RAZORPAY_CURRENCY',        'INR'));
 define('RAZORPAY_ADVANCE_PERCENT', (float) env('RAZORPAY_ADVANCE_PERCENT', '1.00'));
 
